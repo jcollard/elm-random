@@ -26,7 +26,7 @@ type Next g = g -> (Int, g)
 type Split g = g -> (g, g)
 type Range g = g -> (Int,Int)
 
-{-| RandomGen provides a common interface for number generators. To create one, you must specify three components: @docs next, split, range -}
+{-| RandomGen provides a common interface for number generators. To create one, you must specify three components: next, split, range -}
 
 data RandomGen g
   = RandomGen (Next g) (Split g) (Range g)
