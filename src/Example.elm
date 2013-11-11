@@ -18,7 +18,7 @@ listOfInt seed = listOf (mkStdGen seed) (randomInt stdGen)
 listOfFloat : Int -> Int -> Range Float -> [Float]
 listOfFloat seed = listOf (mkStdGen seed) (randomFloat stdGen)
 
-listOf : a -> Random b a -> number -> Range b -> [b]
+listOf : g -> Random t g -> Int -> Range t -> [t]
 listOf gen elemType n (l, h) =
   case n of
     0 -> []
