@@ -1,8 +1,5 @@
-module RandomGen(RandomGen, 
+module RandomGen(Generator, 
                  stdGen,
-                 next,
-                 split,
-                 range,
                  mkStdGen,
                  maxInt,
                  minInt,
@@ -29,42 +26,34 @@ type Next g = g -> (Int, g)
 type Split g = g -> (g, g)
 type Range g = g -> (Int,Int)
 
-{-| RandomGen provides a common interface for number generators.
+{-| Generator provides a common interface for number generators.
 To create one, you must specify three components: next, split, range
+
+ * The next operation returns an Int that is uniformly distributed in the
+   range returned by genRange (including both end points), and a new generator.
+ *  The split operation allows one to obtain two distinct random number
+    gnerators. This is very useful in functional programs (For example, when
+    passing a random number generator down to recursive calls), but very
+    little work has been done on statistically robust implementations of split.
+ * The range operation yields the range of values returned by the generator.
 -}
-data RandomGen g
-  = RandomGen (Next g) (Split g) (Range g)
-
-{-| The next operation returns an Int that is uniformly distributed in the
-range returned by genRange (including both end points), and a new generator.
--}
-next : RandomGen g -> (g -> (Int, g))
-next (RandomGen n _ _) = n
-
-{-| The split operation allows one to obtain two distinct random number
-gnerators. This is very useful in functional programs (For example, when
-passing a random number generator down to recursive calls), but very
-little work has been done on statistically robust implementations of split.
--}
-split : RandomGen g -> Split g
-split (RandomGen _ s _) = s
-
-{-| The range operation yields the range of values returned by the generator. -}
-range : RandomGen g -> Range g
-range (RandomGen _ _ r) = r
-
+type Generator g = {
+  next  : Next g,
+  split : Split g,
+  range : Range g
+}
 
 data StdGen = StdGen Int Int
 
-{-| Provides an instance of RandomGen that has a range of at least 30 bits.
+{-| Provides an instance of Generator that has a range of at least 30 bits.
 
 The result of repeatedly using next should be at least as statistically robust
 as the Minimal Standard Random Number Generator. Until more is known about
 implementations of split, all we require is that split deliver generators that
 are (a) not identical and (b) independently robust in the sense just given.
 -}
-stdGen : RandomGen StdGen
-stdGen = RandomGen stdNext stdSplit stdRange
+stdGen : Generator StdGen
+stdGen = Generator stdNext stdSplit stdRange
 
 {-| The function mkStdGen provides a way of producing an initial generator by
 mapping an Int into a generator. Distinct arguments should be likely to produce
@@ -148,25 +137,25 @@ randomR (Random r _) = r
 random : Random a g -> Rand a g
 random (Random _ r)  = r  
 
-{-| Provides an instance of Random for Int values given a RandomGen.
+{-| Provides an instance of Random for Int values given a Generator.
 The default range is [minInt, maxInt]
 -}
-randomInt : RandomGen g -> Random Int g
+randomInt : Generator g -> Random Int g
 randomInt gen =  
   let randr (a,b) rng = randomIval gen (a, b) rng
       rand rng = randr (minInt, maxInt) rng
   in Random randr rand
 
-{-| Provides an instance of Random for Float values given a RandomGen.
+{-| Provides an instance of Random for Float values given a Generator.
 The default range is (0, 1)
 -}
-randomFloat : RandomGen g -> Random Float g
+randomFloat : Generator g -> Random Float g
 randomFloat gen =
   let randr (a, b) rng = randomFval gen (a, b) rng
       rand rng = randr (0, 1) rng
   in Random randr rand
 
-randomIval : RandomGen g -> (Int, Int) -> g -> (Int, g)
+randomIval : Generator g -> (Int, Int) -> g -> (Int, g)
 randomIval gen (l,h) rng =
   if l > h 
     then randomIval gen (h, l) rng
@@ -179,7 +168,7 @@ randomIval gen (l,h) rng =
             case n of
               0 -> (acc, g)
               n' -> 
-                let (x, g') = (next gen) g
+                let (x, g') = gen.next g
                 in f (n' - 1) (x + acc * b) g'
           (v, rng') = f n 1 rng
       in (l + v `mod` k, rng')
@@ -188,7 +177,7 @@ randomIval gen (l,h) rng =
 iLogBase : Int -> Int -> Int       
 iLogBase b i = if i < b then 1 else 1 + iLogBase b (i `div` b)
 
-randomFval : RandomGen g -> (Float, Float) -> g -> (Float, g)
+randomFval : Generator g -> (Float, Float) -> g -> (Float, g)
 randomFval gen (l, h) rng = 
   if l > h 
     then randomFval gen (h, l) rng 
