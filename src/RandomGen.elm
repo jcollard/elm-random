@@ -18,7 +18,10 @@ This library provides a way to create pseudo-random numbers without the use of
 Signals. In addition to this, it provides a way to produce repeatable results
 by specifying a seed.
 
-The is almost a direct translation of Haskell's [System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html) module which is an implemenation of the Portable Combined Generator of L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
+The is almost a direct translation of Haskell's
+[System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
+module which is an implemenation of the Portable Combined Generator of
+L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
 
 -}
 
@@ -26,16 +29,23 @@ type Next g = g -> (Int, g)
 type Split g = g -> (g, g)
 type Range g = g -> (Int,Int)
 
-{-| RandomGen provides a common interface for number generators. To create one, you must specify three components: next, split, range -}
-
+{-| RandomGen provides a common interface for number generators.
+To create one, you must specify three components: next, split, range
+-}
 data RandomGen g
   = RandomGen (Next g) (Split g) (Range g)
 
-{-| The next operation returns an Int that is uniformly distributed in the range returned by genRange (including both end points), and a new generator. -}
+{-| The next operation returns an Int that is uniformly distributed in the
+range returned by genRange (including both end points), and a new generator.
+-}
 next : RandomGen g -> (g -> (Int, g))
 next (RandomGen n _ _) = n
 
-{-| The split operation allows one to obtain two distinct random number gnerators. This is very useful in functional programs (For example, when passing a random number generator down to recursive calls), but very little work has been done on statistically robust implementations of split. -}
+{-| The split operation allows one to obtain two distinct random number
+gnerators. This is very useful in functional programs (For example, when
+passing a random number generator down to recursive calls), but very
+little work has been done on statistically robust implementations of split.
+-}
 split : RandomGen g -> Split g
 split (RandomGen _ s _) = s
 
@@ -47,12 +57,19 @@ range (RandomGen _ _ r) = r
 data StdGen = StdGen Int Int
 
 {-| Provides an instance of RandomGen that has a range of at least 30 bits.
-    
-the result of repeatedly using next should be at least as statistically robust as the Minimal Standard Random Number Generator. Until more is known about implementations of split, all we require is that split deliver generators that are (a) not identical and (b) independently robust in the sense just given. -}
+
+The result of repeatedly using next should be at least as statistically robust
+as the Minimal Standard Random Number Generator. Until more is known about
+implementations of split, all we require is that split deliver generators that
+are (a) not identical and (b) independently robust in the sense just given.
+-}
 stdGen : RandomGen StdGen
 stdGen = RandomGen stdNext stdSplit stdRange
 
-{-| The function mkStdGen provides a way of producing an initial generator by mapping an Int into a generator. Distinct arguments should be likely to produce distinct generators. -}
+{-| The function mkStdGen provides a way of producing an initial generator by
+mapping an Int into a generator. Distinct arguments should be likely to produce
+distinct generators.
+-}
 mkStdGen : Int -> StdGen
 mkStdGen s = 
   if s < 0 
@@ -121,7 +138,9 @@ type RandR a g = (a, a) -> g -> (a, g)
 data Random a g =
   Random (RandR a g) (Rand a g)
          
-{-| Given a Generator and a range [low, high] produces a value uniformly distributed between the closed interval and a new generator. -}
+{-| Given a Generator and a range [low, high] produces a value uniformly
+distributed between the closed interval and a new generator.
+-}
 randomR : Random a g -> RandR a g
 randomR (Random r _) = r
 
@@ -129,14 +148,18 @@ randomR (Random r _) = r
 random : Random a g -> Rand a g
 random (Random _ r)  = r  
 
-{-| Provides an instance of Random for Int values given a RandomGen. The default range is [minInt, maxInt] -}
+{-| Provides an instance of Random for Int values given a RandomGen.
+The default range is [minInt, maxInt]
+-}
 randomInt : RandomGen g -> Random Int g
 randomInt gen =  
   let randr (a,b) rng = randomIval gen (a, b) rng
       rand rng = randr (minInt, maxInt) rng
   in Random randr rand
 
-{-| Provides an instance of Random for Float values given a RandomGen. The default range is (0, 1) -}
+{-| Provides an instance of Random for Float values given a RandomGen.
+The default range is (0, 1)
+-}
 randomFloat : RandomGen g -> Random Float g
 randomFloat gen =
   let randr (a, b) rng = randomFval gen (a, b) rng
@@ -173,4 +196,3 @@ randomFval gen (l, h) rng =
       let (x, rng') = randomIval gen (minInt, maxInt) rng
           scaled = ((l+h)/2) + ((h-l) / (toFloat (maxInt - minInt))) * (toFloat x)
       in (scaled, rng')
-             
