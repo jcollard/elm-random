@@ -3,172 +3,161 @@ elm-random
 
 Library for pure pseudo-random number generation.
 
-This library provides a way to create pseudo-random numbers without the use of
-Signals. In addition to this, it provides a way to produce repeatable results
-by specifying a seed.
+The Generator Library provides an interface for generating pure pseudo-random
+sequences specified by a seed. This allows for repeatable sequences.
 
-The is almost a direct translation of Haskell's [System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html) module which is an implemenation of the Portable Combined Generator of L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
+To get started immediately, check out the Generator.Standard module which is an 
+implemenation of this interface that provides an implementation of the Portable 
+Combined Generator of L'Ecuyer for 32-bit computers. This implementation 
+provides enough randomness for most purposes.
 
-### Random number generators
+# Generator.Standard API
 
-<a id="randomgen"></a>
-The data type [RandomGen](#randomgen) provides a common interface to random number generators.
+[The Standard Generator](#the-standard-generator)
+
+[Generating Functions](#generating-functions)
+
+* [Random a](#random-a)
+* [int](#int)
+* [intRange](#intrange)
+* [float](#float)
+* [floatRange](#floatrange)
+* [listOf](#listof)
+
+[Example Usage](#example-usage)
+
+Generator.Standard is an implemenation of the Generator interface that uses
+an implementation of the Portable Combined Generator of L'Ecuyer for 32-bit
+computers.
+
+## The Standard Generator
 
 ```haskell
-data RandomGen g 
-  = RandomGen (Next g) (Split g) (Range g)
+type StandardGenerator = G.Generator Standard
+standard : Int -> StandardGenerator
 ```
 
-<a id="next"></a>
+Given a seed value, creates a standard Generator.
+Using the same seed will yield repeatable results.
 
+This generator is almost a direct translation from Haskell's
+[System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
+module which is an implemenation of the Portable Combined Generator of
+L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
+
+
+## Generating Functions
+
+#### Random a
 ```haskell
-type Next g = g -> (Int, g)
+type Random a = StandardGenerator -> (a, StandardGenerator)
 ```
 
-The [Next](#next) operation returns an **Int** that is uniformly distributed in 
-the range returned by the **Range** operator, and a new generator.
+The Random type is a function that takes in a StandardGenerator and produces
+a pair containing a Random value and a StandardGenerator that should be
+propogated to future generations to produce the next element in the sequence.
 
-<a id="split"></a>
 
+#### int
 ```haskell
-type Split g = g -> (g, g)
+int : Random Int
+```
+Generate a 32-bit integer in range [minInt32,maxInt32] inclusive.
+
+#### intRange
+```haskell
+intRange : (Int, Int) -> Random Int
 ```
 
-The [Split](#split) operation allows one to obtain two distinct random number 
-generators. This is very useful in functional programs (For example, 
-when passing a random number generator down to recursive calls), but 
-very little work has been done on statistically robust implementations of split.
-
-<a id="range"></a>
-
-```haskell
-type Range g = g -> (Int, Int)
-```
-
-The [Range](#range) operation yields the range of values returned by the generator.
-
-There are selector functions for each of the [RandomGen](#randomgen) functions.
-
-```haskell
-next : RandomGen g -> Next g
-split : RandomGen g -> Split g
-range : RandomGen g -> Range g
-```
-
-### The Standard Random Number Generator
-
-This library provides an instance of [RandomGen](#randomgen) that has a range of 
-at least 30 bits. The result of repeatedly using [next](#next) should be at least 
-as statistically robust as the Minimal Standard Random Number Generator. 
-Until more is known about implementations of split, all we require is that 
-split deliver generators that are (a) not identical and (b) independently robust 
-in the sense just given. 
-
-```haskell
-stdGen : RandomGen StdGen
-````
-
-<a id="mkstdgen"></a>
-
-```haskell
-mkStdGen : Int -> StdGen
-```
-The function [mkStdGen](#mkstdgen) provides a way of producing an initial generator 
-by mapping an **Int** seed into a generator. Distinct arguments should be likely
-to produce distinct generators.
-
-### Random values of various types
-
-Given a generator, the **Random** type allows the programmer to extract 
-random values of a variety of types.
-
-```haskell
-data Random a g =
-  Random (RandR a g) (Rand a g)
-```
-
-<a id="randr"></a>
-```haskell
-type RandR a g = (a, a) -> g -> (a, g)
-```
-The [RandR](#randr) operation takes a range (lo,hi) and a random number generator g,
-and returns a random value uniformly distributed in the closed interval [lo, hi],
-together with a new generator. It is unspecified what happens if lo>hi. For continuous
-types there is no requirement that the values lo and hi are ever produced, but they
-may be, depending on the implementaiton and the interval.
-
-
-<a id="rand"></a>
-```haskell
-type Rand a g = g -> (a, g)
-```
-The [Rand](#rand) operation is the same as [RandR](#randr) but uses a default range
-determined by the type.
-
-Two selectors for the [RandR](#randr) and [Rand](#rand) types are provided.
-
-```haskell
-randomR : Random a g -> RandR a g
-random : Random a g -> Rand a g
-```
-
-### Implementations of Random Generators
-<a id="randomint"></a>
-```haskell
-randomInt : RandomGen g -> Random Int g
-```
-Given a [RandomGen](#randomgen) produces a [Random](#random) of type **Int** using the strategy
-of the generator provided. The default range of the [Rand](#rand) operation
-is [[minInt](#minint),[maxInt](#maxint)].
-
-<a id="minint"></a> <a id="maxint"></a>
+#### minInt
 ```haskell
 minInt : Int
-minInt = -2147483648
-
-maxInt : Int
-maxInt = 2147483647
 ```
+The maximum value for randomly generated for ints
 
-<a id="randomfloat"></a>
+#### maxInt
 ```haskell
-randomFloat : RandomGen g -> Random Float g
+maxInt : Int
 ```
-Given a [RandomGen](#randomgen) produces a [Random](#random) of type **Float** using the strategy
-of the generator provided. The default range of the [Rand](#rand) operation is
-[0,1].
+The minimum value for randomly generated for ints
+
+Generate an integer in a given range. For example, the expression
+`intRange (0,1) generator` will produce either a zero or a one. Note: the
+randomness is only enough for 32-bit values. Although this function 
+will continue to produce values outside of the range [minInt32, maxInt32],
+sufficient randomness is not guaranteed.
+
+#### float
+```haskell
+float : Random Float
+```
+
+Generate a float between 0 and 1 inclusive.
+
+#### floatRange
+```haskell
+floatRange : (Float, Float) -> Random Float
+```
+Generate a float in a given range.
+
+#### listOf
+```haskell
+listOf : Random a -> Int -> Random [a]
+```
+Generate a list of random values using a generator function.
+
+```haskell
+--list of 10 floats in range (0,1):
+listOf float 10 generator
+```
+
+```haskell
+-- list of 42 integers in range [0,3]
+listOf (intRange (0,3)) 42 generator
+```
 
 
-### Example Usage
-The example below shows how to generate lists of random **Int** and **Float** values.
+## Example Usage
 
 ```haskell
 module Example where
 
-import open RandomGen
+-- Generator.Standard provides a concrete implementation of Generator that
+-- has enough randomness for most purposes.
+import open Generator.Standard
 
--- Create a list of 5 floats ranging from 0 to 1 using the seed 0
-floats = listOfFloat 0 5 (0, 1)
+-- Generates a float between 0 and 1 using the standard generator seeded with 0.
+-- Notice that the generating function returns a pair containing the generated
+-- element along with the resulting nextGenerator. The nextGenerator can
+-- be used to generate more elements in the sequence by suppling it
+-- in place of (standard n).
+generateFloat = 
+  let (val, nextGenerator) = float (standard 0)
+  in val
 
--- Create a list of 10 ints ranging from 0 to 100 using the seed 0
-ints = listOfInt 0 10 (0, 100)
+-- Generates a list of 10 ints ranging from 0 to 100 using the standard
+-- generator seeded with 0.
+-- Notice that listOf returns a pair containing the list of the
+-- specified size along with the resulting nextGenerator. The 
+-- nextGenerator could then be used to produce more elements in
+-- the sequence at another time by supplying it in place of (standard n)
+generateIntList = 
+  let generatingFunction = intRange (0, 100)
+      (vals, nextGenerator) = listOf generatingFunction 10 (standard 0)
+  in vals
+     
+-- Generates a list of 15 ints where the first 5 elements are in the range [0, 9]
+-- the middle 5 elements are in the range [10, 19] and the last 5 elements
+-- are in th range [20,29] using the standard generator seeded with 0.
+-- Notice that the generation function listOf returns a pair containing
+-- a list and the generator to produce the next part of the sequence. This
+-- is then propogated to the next generator function.
+generateMany =
+  let initialGenerator = standard 0
+      (first, generator') = listOf (intRange (0, 9)) 5 initialGenerator
+      (second, generator'') = listOf (intRange (10, 19)) 5 generator'
+      (third, _) = listOf (intRange (20, 29)) 5 generator''
+  in first ++ second ++ third
 
-main = flow down [asText floats, asText ints]
-
-type Range a = (a, a)
-
-listOfInt : Int -> Int -> Range Int -> [Int]
-listOfInt seed = listOf (mkStdGen seed) (randomInt stdGen)
-       
-listOfFloat : Int -> Int -> Range Float -> [Float]
-listOfFloat seed = listOf (mkStdGen seed) (randomFloat stdGen)
-
-listOf : g -> Random t g -> Int -> Range t -> [t]
-listOf gen elemType n (l, h) =
-  case n of
-    0 -> []
-    n ->
-      let rand = randomR <| elemType
-          (i, gen') = rand (l,h) gen
-      in i::(listOf gen' elemType (n-1) (l, h))
+main = flow down [asText generateFloat, asText generateIntList, asText generateMany]
 ```
