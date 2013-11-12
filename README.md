@@ -33,7 +33,7 @@ computers.
 ## The Standard Generator
 
 ```haskell
-type StandardGenerator = G.Generator Standard
+type StandardGenerator = Generator.Generator Standard
 standard : Int -> StandardGenerator
 ```
 
