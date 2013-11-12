@@ -13,6 +13,12 @@ provides enough randomness for most purposes.
 
 # Generator.Standard API
 
+Generator.Standard is an implemenation of the Generator interface that uses
+an implementation of the Portable Combined Generator of L'Ecuyer for 32-bit
+computers.
+
+[Generators](#generators)
+
 [The Standard Generator](#the-standard-generator)
 
 [Generating Functions](#generating-functions)
@@ -26,14 +32,33 @@ provides enough randomness for most purposes.
 
 [Example Usage](#example-usage)
 
-Generator.Standard is an implemenation of the Generator interface that uses
-an implementation of the Portable Combined Generator of L'Ecuyer for 32-bit
-computers.
+## Generators
+```haskell
+type Generator state = {
+  state : state,
+  next  : state -> (Int, state),
+  split : state -> (state, state),
+  range : state -> (Int,Int)
+}
+```
+
+Generator provides a common interface for number generators.
+To create one, you must specify three components: next, split, range
+
+ * The `state` field holds the current state of the generator.
+ * The `next` operation returns an Int that is uniformly distributed in the
+   range returned by genRange (including both end points), and a new generator.
+ * The `split` operation allows one to obtain two distinct random number
+   generators. This is very useful in functional programs (For example, when
+   passing a random number generator down to recursive calls), but very
+   little work has been done on statistically robust implementations of split.
+ * The `range` operation yields the range of values returned by the generator.
+
 
 ## The Standard Generator
 
 ```haskell
-type StandardGenerator = Generator.Generator Standard
+type StandardGenerator = Generator Standard
 standard : Int -> StandardGenerator
 ```
 
