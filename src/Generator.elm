@@ -1,4 +1,4 @@
-module RandomGen(Generator,
+module Generator(Generator,
                  standard,
                  int,
                  intRange,
