@@ -4,8 +4,6 @@ module RandomGen(Generator,
                  maxInt,
                  minInt,
                  Random,
-                 randomR,
-                 random,
                  randomInt,
                  randomFloat) where
 
@@ -29,18 +27,18 @@ type Range g = g -> (Int,Int)
 {-| Generator provides a common interface for number generators.
 To create one, you must specify three components: next, split, range
 
- * The next operation returns an Int that is uniformly distributed in the
+ * The `next` operation returns an Int that is uniformly distributed in the
    range returned by genRange (including both end points), and a new generator.
- *  The split operation allows one to obtain two distinct random number
-    gnerators. This is very useful in functional programs (For example, when
-    passing a random number generator down to recursive calls), but very
-    little work has been done on statistically robust implementations of split.
- * The range operation yields the range of values returned by the generator.
+ * The `split` operation allows one to obtain two distinct random number
+   generators. This is very useful in functional programs (For example, when
+   passing a random number generator down to recursive calls), but very
+   little work has been done on statistically robust implementations of split.
+ * The `range` operation yields the range of values returned by the generator.
 -}
 type Generator g = {
-  next  : Next g,
-  split : Split g,
-  range : Range g
+  next  : g -> (Int, g),
+  split : g -> (g, g),
+  range : g -> (Int,Int)
 }
 
 data StdGen = StdGen Int Int
@@ -120,22 +118,18 @@ stdSplit std =
 stdRange : Range StdGen
 stdRange _ = (0, magicNum8)
 
-type Rand a g = g -> (a, g)
-type RandR a g = (a, a) -> g -> (a, g)         
+{-| The Random type provides an interface for supplying random values over a range.
 
-{-| The Random type provides an interface for supplying random values over a range. -}
-data Random a g =
-  Random (RandR a g) (Rand a g)
-         
-{-| Given a Generator and a range [low, high] produces a value uniformly
-distributed between the closed interval and a new generator.
+  * `value` &ndash; Given a Generator, this produces a value uniformly
+    distributed on the generator's default range and a new generator.
+  * `range` &ndash; Same as the `value` field but you can set your own
+    range. The first argument is a range [low, high] and the resulting
+    value is uniformly distributed along that closed interval.
 -}
-randomR : Random a g -> RandR a g
-randomR (Random r _) = r
-
-{-| This is the same as randomR but uses a default range -}
-random : Random a g -> Rand a g
-random (Random _ r)  = r  
+type Random value generator = {
+  value : generator -> (value, generator),
+  range : (value, value) -> generator -> (value, generator)
+}
 
 {-| Provides an instance of Random for Int values given a Generator.
 The default range is [minInt, maxInt]
@@ -144,7 +138,7 @@ randomInt : Generator g -> Random Int g
 randomInt gen =  
   let randr (a,b) rng = randomIval gen (a, b) rng
       rand rng = randr (minInt, maxInt) rng
-  in Random randr rand
+  in Random rand randr
 
 {-| Provides an instance of Random for Float values given a Generator.
 The default range is (0, 1)
@@ -153,7 +147,7 @@ randomFloat : Generator g -> Random Float g
 randomFloat gen =
   let randr (a, b) rng = randomFval gen (a, b) rng
       rand rng = randr (0, 1) rng
-  in Random randr rand
+  in Random rand randr
 
 randomIval : Generator g -> (Int, Int) -> g -> (Int, g)
 randomIval gen (l,h) rng =
@@ -164,7 +158,6 @@ randomIval gen (l,h) rng =
           b = magicNum8 - 1
           n = iLogBase b k
           f n acc g =
-
             case n of
               0 -> (acc, g)
               n' -> 
@@ -172,8 +165,7 @@ randomIval gen (l,h) rng =
                 in f (n' - 1) (x + acc * b) g'
           (v, rng') = f n 1 rng
       in (l + v `mod` k, rng')
-             
-         
+
 iLogBase : Int -> Int -> Int       
 iLogBase b i = if i < b then 1 else 1 + iLogBase b (i `div` b)
 
