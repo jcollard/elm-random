@@ -62,12 +62,17 @@ propogated to future generations to produce the next element in the sequence.
 ```haskell
 int : Random Int
 ```
-Generate a 32-bit integer in range [minInt32,maxInt32] inclusive.
+Generate a 32-bit integer in range [minInt,maxInt] inclusive.
 
 #### intRange
 ```haskell
 intRange : (Int, Int) -> Random Int
 ```
+Generate an integer in a given range. For example, the expression
+`intRange (0,1) generator` will produce either a zero or a one. Note: the
+randomness is only enough for values within the range [minInt, maxInt].
+ Although this function will continue to produce values outside of the 
+range [minInt, maxInt], sufficient randomness is not guaranteed.
 
 #### minInt
 ```haskell
@@ -80,12 +85,6 @@ The maximum value for randomly generated for ints
 maxInt : Int
 ```
 The minimum value for randomly generated for ints
-
-Generate an integer in a given range. For example, the expression
-`intRange (0,1) generator` will produce either a zero or a one. Note: the
-randomness is only enough for 32-bit values. Although this function 
-will continue to produce values outside of the range [minInt32, maxInt32],
-sufficient randomness is not guaranteed.
 
 #### float
 ```haskell
