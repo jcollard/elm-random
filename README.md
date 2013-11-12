@@ -17,22 +17,144 @@ Generator.Standard is an implemenation of the Generator interface that uses
 an implementation of the Portable Combined Generator of L'Ecuyer for 32-bit
 computers.
 
-[Generators](#generators)
-
 [The Standard Generator](#the-standard-generator)
 
 [Generating Functions](#generating-functions)
 
-* [Random a](#random-a)
 * [int](#int)
 * [intRange](#intrange)
 * [float](#float)
 * [floatRange](#floatrange)
 * [listOf](#listof)
 
+[Generators](#generators)
+
 [Example Usage](#example-usage)
 
+[Suggested Type Synonyms](#suggested-type-synonyms)
+
+## The Standard Generator
+
+The Standard Generator is almost a direct translation from Haskell's
+[System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
+module which is an implemenation of the Portable Combined Generator of
+L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
+
+
+```haskell
+standard : Int -> StandardGenerator
+```
+
+Given a seed value, creates a standard Generator.
+Using the same seed will yield repeatable results.
+
+```
+-- Create a random number generator. This must be threaded through the program.
+-- This one is a "standard generator" (Generator.Standard) but other kinds of 
+-- generators can be used.
+gen : Generator Standard
+gen = standard 42
+
+-- Create two random integers named x and y.
+(x, gen' ) = int gen
+(y, gen'') = int gen'
+```
+
+The explicit use of a generator makes it possible to reproduce results
+by using the same seed. In the example above the seed was 42, and every time
+that code runs it will give the same values for `x` and `y`.
+
+
+## Generating Functions
+
+All of these functions take a generator as an argument and step it forward,
+returning the new version in their result. You generally should use the updated
+generator for subsequent computations.
+
+#### int
+```haskell
+int : Generator g -> (Int, Generator g)
+```
+Generate a 32-bit integer in range [minInt,maxInt] inclusive.
+
+A conceivable use of it would be:
+
+      int32 gen == (42, gen')
+
+
+#### intRange
+```haskell
+intRange : (Int, Int) -> Generator g -> (Int, Generator g)
+```
+Generate an integer in a given range. For example, the expression
+`intRange (0,1) generator` will produce either a zero or a one. Note: the
+randomness is only enough for values within the range [minInt, maxInt].
+ Although this function will continue to produce values outside of the 
+range [minInt, maxInt], sufficient randomness is not guaranteed.
+
+#### minInt
+```haskell
+minInt : Int
+```
+The maximum value for randomly generated for ints
+
+#### maxInt
+```haskell
+maxInt : Int
+```
+The minimum value for randomly generated for ints
+
+#### float
+```haskell
+float : Generator g -> (Float, Generator g)
+```
+
+Generate a float between 0 and 1 inclusive.
+
+A conceivable usage would be:
+
+      float gen == (0.1, gen')
+
+#### floatRange
+```haskell
+floatRange : (Float, Float) -> Generator g -> (Float, Generator g)
+```
+Generate a float in a given range.
+
+A usage of it
+would look something like this:
+
+      floatRange (-10.0, 10.0) gen == (1.1618, gen') 
+
+#### listOf
+```haskell
+listOf : (Generator g -> (a, Generator g)) -> Int -> 
+         Generator g -> ([a], Generator g)
+```
+Generate a list of random values using a generator function.
+
+```haskell
+-- list of 10 floats in range (0,1):
+ listOf float 10 gen
+
+-- list of 42 integers in range [0,3]
+listOf (intRange (0,3)) 42 gen
+
+-- create a ten by ten list of list of random integers
+listOf (listOf int 10) 10 gen
+
+-- If you make a function to create random strings,
+-- you can even create lists of those!
+string : Generator g -> (String, Generator g)
+listOf string 5 gen
+```
+
 ## Generators
+
+You need a generator to actually create random values. Each generator has different
+properties, so be sure to use one appropriate for your use case. If none fit your usage
+you can define your own by creating somithing with the `Generator` type.
+
 ```haskell
 type Generator state = {
   state : state,
@@ -55,90 +177,6 @@ To create one, you must specify three components: next, split, range
  * The `range` operation yields the range of values returned by the generator.
 
 
-## The Standard Generator
-
-```haskell
-type StandardGenerator = Generator Standard
-standard : Int -> StandardGenerator
-```
-
-Given a seed value, creates a standard Generator.
-Using the same seed will yield repeatable results.
-
-This generator is almost a direct translation from Haskell's
-[System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
-module which is an implemenation of the Portable Combined Generator of
-L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
-
-
-## Generating Functions
-
-#### Random a
-```haskell
-type Random a = StandardGenerator -> (a, StandardGenerator)
-```
-
-The Random type is a function that takes in a StandardGenerator and produces
-a pair containing a Random value and a StandardGenerator that should be
-propogated to future generations to produce the next element in the sequence.
-
-
-#### int
-```haskell
-int : Random Int
-```
-Generate a 32-bit integer in range [minInt,maxInt] inclusive.
-
-#### intRange
-```haskell
-intRange : (Int, Int) -> Random Int
-```
-Generate an integer in a given range. For example, the expression
-`intRange (0,1) generator` will produce either a zero or a one. Note: the
-randomness is only enough for values within the range [minInt, maxInt].
- Although this function will continue to produce values outside of the 
-range [minInt, maxInt], sufficient randomness is not guaranteed.
-
-#### minInt
-```haskell
-minInt : Int
-```
-The maximum value for randomly generated for ints
-
-#### maxInt
-```haskell
-maxInt : Int
-```
-The minimum value for randomly generated for ints
-
-#### float
-```haskell
-float : Random Float
-```
-
-Generate a float between 0 and 1 inclusive.
-
-#### floatRange
-```haskell
-floatRange : (Float, Float) -> Random Float
-```
-Generate a float in a given range.
-
-#### listOf
-```haskell
-listOf : Random a -> Int -> Random [a]
-```
-Generate a list of random values using a generator function.
-
-```haskell
---list of 10 floats in range (0,1):
-listOf float 10 generator
-```
-
-```haskell
--- list of 42 integers in range [0,3]
-listOf (intRange (0,3)) 42 generator
-```
 
 
 ## Example Usage
@@ -185,3 +223,27 @@ generateMany =
 
 main = flow down [asText generateFloat, asText generateIntList, asText generateMany]
 ```
+
+#### Suggested Type Synonyms
+
+As you get a better grasp of the interface presented here, you may find it usefule
+to use the following type synonyms.
+
+```haskell
+type StdGen = Generator Standard
+type Random a = Generator StdGen -> (a, StdGen)
+```
+
+With the use of these, the type signatures become easier to write:
+
+```haskell
+int : Random Int
+float : Random Int
+listOf : Random a -> Int -> Random [a]
+```
+
+However, with these synonyms it is not immediately obvious what
+arguments the functions expect nor is it obvious what they return. 
+This will almost certainly be confusing to those unfamiliar
+with this library and it is not recommended that they be used on exported
+functions.
