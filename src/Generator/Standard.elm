@@ -1,11 +1,4 @@
-module Generator.Standard (standard,
-                           int,
-                           intRange,
-                           float,
-                           floatRange,
-                           listOf,
-                           minInt,
-                           maxInt) where
+module Generator.Standard (generator) where
 
 {-|
 
@@ -15,9 +8,6 @@ computers.
 
 # The Standard Generator
 @docs standard
-
-# Generating Functions
-@docs int, float, intRange, float, listOf
 
 -}
 
@@ -31,49 +21,8 @@ This generator is almost a direct translation from Haskell's
 [System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
 module which is an implemenation of the Portable Combined Generator of
 L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.-}
-standard : Int -> Generator Standard
-standard seed = Generator (mkStdGen seed) stdNext stdSplit stdRange
-
-{-| Generate a 32-bit integer in range [minInt32,maxInt32] inclusive. -}
-int : Generator Standard -> (Int, Generator Standard)
-int = int32
-
-{-| Generate an integer in a given range. For example, the expression
-`intRange (0,1) generator` will produce either a zero or a one. Note: the
-randomness is only enough for 32-bit values. Although this function 
-will continue to produce values outside of the range [minInt32, maxInt32],
-sufficient randomness is not guaranteed.
--}
-intRange : (Int, Int) -> Generator Standard -> (Int, Generator Standard)
-intRange = int32Range
-
-{-| Generate a float between 0 and 1 inclusive. -}
-float : Generator Standard -> (Float, Generator Standard)
-float = float
-
-{-| Generate a float in a given range. -}
-floatRange : (Float, Float) -> Generator Standard -> (Float, Generator Standard)
-floatRange = floatRange
-
-{-| Generate a list of random values using a generator function.
-
-      -- list of 10 floats in range (0,1):
-      listOf float 10 generator
-
-      -- list of 42 integers in range [0,3]
-      listOf (intRange (0,3)) 42 generator
--}
-listOf : (Generator Standard -> (a, Generator Standard)) -> Int -> 
-          Generator Standard -> ([a], Generator Standard)
-listOf = listOf
-
-{-| The maximum value for randomly generated for ints -}
-minInt : Int
-minInt = minInt32
-
-{-| The minimum value for randomly generated for ints -}
-maxInt : Int
-maxInt = maxInt32
+generator : Int -> Generator Standard
+generator seed = Generator (mkStdGen seed) stdNext stdSplit stdRange
 
 data Standard = Standard Int Int
 
