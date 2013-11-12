@@ -28,6 +28,9 @@ computers.
 
 [Example Usage](#example-usage)
 
+* [Generating Numbers](#generating-numbers)
+* [Generating Custom Types](#generating-custom-types)
+
 [Suggested Type Synonyms](#suggested-type-synonyms)
 
 ## The Standard Generator
