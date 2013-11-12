@@ -3,17 +3,14 @@ elm-random
 
 Library for pure pseudo-random number generation.
 
-The Generator Library provides an interface for generating pure pseudo-random
-sequences specified by a seed. This allows for repeatable sequences.
+The Generator Library provides a strategy for generating pure pseudo-random
+sequences specified by a seed.
 
-To get started immediately, check out the Generator.Standard module which is an 
-implemenation of this interface that provides an implementation of the Portable 
-Combined Generator of L'Ecuyer for 32-bit computers. This implementation 
-provides enough randomness for most purposes.
+To get started immediately, `import Generator` and `import Generator.Standard` 
 
 # Generator.Standard API
 
-Generator.Standard is an implemenation of the Generator interface that uses
+Generator.Standard is an implemenation of Generator that uses
 an implementation of the Portable Combined Generator of L'Ecuyer for 32-bit
 computers.
 
@@ -21,8 +18,8 @@ computers.
 
 [Generating Functions](#generating-functions)
 
-* [int](#int)
-* [intRange](#intrange)
+* [int32](#int32)
+* [int32Range](#int32range)
 * [float](#float)
 * [floatRange](#floatrange)
 * [listOf](#listof)
@@ -35,14 +32,15 @@ computers.
 
 ## The Standard Generator
 
-The Standard Generator is almost a direct translation from Haskell's
+The Standard.Generator module provides a generator that
+is almost a direct translation from Haskell's
 [System.Random](http://hackage.haskell.org/package/random-1.0.1.1/docs/System-Random.html)
 module which is an implemenation of the Portable Combined Generator of
 L'Ecuyer for 32-bit computers. It has a period of roughly 2.30584e18.
 
 
 ```haskell
-standard : Int -> StandardGenerator
+generator : Int -> Generator Standard
 ```
 
 Given a seed value, creates a standard Generator.
@@ -53,7 +51,7 @@ Using the same seed will yield repeatable results.
 -- This one is a "standard generator" (Generator.Standard) but other kinds of 
 -- generators can be used.
 gen : Generator Standard
-gen = standard 42
+gen = generator 42
 
 -- Create two random integers named x and y.
 (x, gen' ) = int gen
@@ -163,27 +161,27 @@ type Generator state = {
   range : state -> (Int,Int)
 }
 ```
-
-Generator provides a common interface for number generators.
-To create one, you must specify three components: next, split, range
+ This provides a common strategy for generating random values
+ so that you can create your
+own generators. A generator must define the following fields:
 
  * The `state` field holds the current state of the generator.
+ * The `range` operation yields the range of values returned by the generator.
  * The `next` operation returns an Int that is uniformly distributed in the
-   range returned by genRange (including both end points), and a new generator.
+   range described by `range` (including both end points) and a new generator.
  * The `split` operation allows one to obtain two distinct random number
    generators. This is very useful in functional programs (For example, when
    passing a random number generator down to recursive calls), but very
    little work has been done on statistically robust implementations of split.
- * The `range` operation yields the range of values returned by the generator.
-
-
-
 
 ## Example Usage
+
+#### Generating Numbers
 
 ```haskell
 module Example where
 
+import open Generator
 -- Generator.Standard provides a concrete implementation of Generator that
 -- has enough randomness for most purposes.
 import open Generator.Standard
@@ -194,7 +192,7 @@ import open Generator.Standard
 -- be used to generate more elements in the sequence by suppling it
 -- in place of (standard n).
 generateFloat = 
-  let (val, nextGenerator) = float (standard 0)
+  let (val, nextGenerator) = float (generator 0)
   in val
 
 -- Generates a list of 10 ints ranging from 0 to 100 using the standard
@@ -205,7 +203,7 @@ generateFloat =
 -- the sequence at another time by supplying it in place of (standard n)
 generateIntList = 
   let generatingFunction = intRange (0, 100)
-      (vals, nextGenerator) = listOf generatingFunction 10 (standard 0)
+      (vals, nextGenerator) = listOf generatingFunction 10 (generator 0)
   in vals
      
 -- Generates a list of 15 ints where the first 5 elements are in the range [0, 9]
@@ -215,18 +213,40 @@ generateIntList =
 -- a list and the generator to produce the next part of the sequence. This
 -- is then propogated to the next generator function.
 generateMany =
-  let initialGenerator = standard 0
+  let initialGenerator = generator 0
       (first, generator') = listOf (intRange (0, 9)) 5 initialGenerator
       (second, generator'') = listOf (intRange (10, 19)) 5 generator'
       (third, _) = listOf (intRange (20, 29)) 5 generator''
   in first ++ second ++ third
+```
 
-main = flow down [asText generateFloat, asText generateIntList, asText generateMany]
+#### Generating Custom Types
+
+```haskell
+import open Generator
+import open Generator.Standard
+
+-- A basic data type
+data Color = Red | Green | Blue
+
+-- Generates random colors
+color : Generator g -> (Color, Generator g)
+color gen =
+  let (i, gen') = int32Range (0, 2) gen
+      cval = case i of
+        0 -> Red
+        1 -> Green
+        2 -> Blue
+  in (cval, gen')
+     
+-- Generates a list of 5 random colors     
+generateColorList = listOf color 5 (generator 42)
+
 ```
 
 #### Suggested Type Synonyms
 
-As you get a better grasp of the interface presented here, you may find it usefule
+As you get a better grasp of the module presented here, you may find it usefule
 to use the following type synonyms.
 
 ```haskell
