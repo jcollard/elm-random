@@ -72,9 +72,9 @@ All of these functions take a generator as an argument and step it forward,
 returning the new version in their result. You generally should use the updated
 generator for subsequent computations.
 
-#### int
+#### int32
 ```haskell
-int : Generator g -> (Int, Generator g)
+int32 : Generator g -> (Int, Generator g)
 ```
 Generate a 32-bit integer in range [minInt,maxInt] inclusive.
 
@@ -83,25 +83,25 @@ A conceivable use of it would be:
       int32 gen == (42, gen')
 
 
-#### intRange
+#### int32Range
 ```haskell
-intRange : (Int, Int) -> Generator g -> (Int, Generator g)
+int32Range : (Int, Int) -> Generator g -> (Int, Generator g)
 ```
 Generate an integer in a given range. For example, the expression
-`intRange (0,1) generator` will produce either a zero or a one. Note: the
-randomness is only enough for values within the range [minInt, maxInt].
+`int32Range (0,1) generator` will produce either a zero or a one. Note: the
+randomness is only enough for values within the range [minInt32, maxInt32].
  Although this function will continue to produce values outside of the 
-range [minInt, maxInt], sufficient randomness is not guaranteed.
+range [minInt32, maxInt32], sufficient randomness is not guaranteed.
 
-#### minInt
+#### minInt32
 ```haskell
-minInt : Int
+minInt32 : Int
 ```
 The maximum value for randomly generated for ints
 
-#### maxInt
+#### maxInt32
 ```haskell
-maxInt : Int
+maxInt32 : Int
 ```
 The minimum value for randomly generated for ints
 
@@ -139,7 +139,7 @@ Generate a list of random values using a generator function.
  listOf float 10 gen
 
 -- list of 42 integers in range [0,3]
-listOf (intRange (0,3)) 42 gen
+listOf (int32Range (0,3)) 42 gen
 
 -- create a ten by ten list of list of random integers
 listOf (listOf int 10) 10 gen
@@ -205,7 +205,7 @@ generateFloat =
 -- nextGenerator could then be used to produce more elements in
 -- the sequence at another time by supplying it in place of (standard n)
 generateIntList = 
-  let generatingFunction = intRange (0, 100)
+  let generatingFunction = int32Range (0, 100)
       (vals, nextGenerator) = listOf generatingFunction 10 (generator 0)
   in vals
      
@@ -217,9 +217,9 @@ generateIntList =
 -- is then propogated to the next generator function.
 generateMany =
   let initialGenerator = generator 0
-      (first, generator') = listOf (intRange (0, 9)) 5 initialGenerator
-      (second, generator'') = listOf (intRange (10, 19)) 5 generator'
-      (third, _) = listOf (intRange (20, 29)) 5 generator''
+      (first, generator') = listOf (int32Range (0, 9)) 5 initialGenerator
+      (second, generator'') = listOf (int32Range (10, 19)) 5 generator'
+      (third, _) = listOf (int32Range (20, 29)) 5 generator''
   in first ++ second ++ third
 ```
 
@@ -260,7 +260,7 @@ type Random a = Generator StdGen -> (a, StdGen)
 With the use of these, the type signatures become easier to write:
 
 ```haskell
-int : Random Int
+int32 : Random Int
 float : Random Int
 listOf : Random a -> Int -> Random [a]
 ```
