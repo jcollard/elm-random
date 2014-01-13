@@ -261,7 +261,7 @@ With the use of these, the type signatures become easier to write:
 
 ```haskell
 int32 : Random Int
-float : Random Int
+float : Random Float
 listOf : Random a -> Int -> Random [a]
 ```
 
